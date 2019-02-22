@@ -6,14 +6,9 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import com.zw.yanshinavi.R;
 import com.zw.yanshinavi.common.AppManager;
-import com.zw.yanshinavi.utils.DisplayUtils;
 
 import butterknife.ButterKnife;
 
@@ -28,6 +23,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         setContentView(getLayoutRes());
         ButterKnife.bind(this);
         afterCreate();
+
     }
 
     @Override
