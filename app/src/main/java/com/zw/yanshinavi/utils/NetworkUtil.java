@@ -1,9 +1,12 @@
 package com.zw.yanshinavi.utils;
 
 import android.content.Context;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
+
+import com.zw.yanshinavi.common.App;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -100,6 +103,21 @@ public class NetworkUtil {
             result = "InterruptedException";
         } finally {
             Log.d("----result---", "result = " + result);
+        }
+        return false;
+    }
+
+    /**
+     * 判断用户是否开启了位置服务
+     *
+     * @return
+     */
+    public static boolean isLocationEnabled(){
+        LocationManager locationManager = (LocationManager) App.getAppContext().getSystemService(Context.LOCATION_SERVICE);
+        boolean gps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean network = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        if (gps || network) {
+            return true;
         }
         return false;
     }
