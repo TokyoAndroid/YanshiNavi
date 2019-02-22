@@ -1,6 +1,7 @@
 package com.zw.yanshinavi.services;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 
@@ -9,6 +10,9 @@ import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.zw.yanshinavi.common.App;
+import com.zw.yanshinavi.event.LocationEvent;
+
+import org.greenrobot.eventbus.EventBus;
 
 public class LocationService extends Service implements AMapLocationListener {
 
@@ -18,8 +22,9 @@ public class LocationService extends Service implements AMapLocationListener {
 
     private boolean isFirstLocation = true; //是否是初次定位
 
-
-    public LocationService() {
+    public static Intent getLancher(Context context) {
+        Intent intent = new Intent(context,LocationService.class);
+        return intent;
     }
 
     @Override
@@ -49,12 +54,9 @@ public class LocationService extends Service implements AMapLocationListener {
         lat = aMapLocation.getLatitude(); // 获取纬度
         lon = aMapLocation.getLongitude(); // 获取经度
         if( isFirstLocation ) {
-
+            EventBus.getDefault().post(new LocationEvent(lat,lon));
+            isFirstLocation = false;
         }
     }
 
-    public interface onFirstLocationListener{
-
-        void onFirstLocation(double lat, double lon);
-    }
 }

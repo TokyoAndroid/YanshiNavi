@@ -1,4 +1,4 @@
-package com.zw.yanshinavi.ui;
+package com.zw.yanshinavi.ui.activity;
 
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -14,11 +14,6 @@ import com.zw.yanshinavi.utils.NetworkUtil;
 
 public class WelcomeActivity extends BaseActivity {
 
-    private static final int LOCATION_TIMEOUT = 10 * 1000; // 定位超时时间
-
-    public double lat, lon; // 经度，纬度
-
-    private boolean isFirstLocation = true; //是否是初次定位
     private AlertDialog mDialog;
 
     /**
@@ -51,9 +46,8 @@ public class WelcomeActivity extends BaseActivity {
         } else {
             // TODO 跳转到注册码界面
             startActivity(MainActivity.getLauncher(this));
-            finish();
         }
-
+        finish();
     }
 
     private void showDialog(String title, String message) {
@@ -64,7 +58,8 @@ public class WelcomeActivity extends BaseActivity {
             builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    AppManager.getInstance().finishAllActivity();
+                    mDialog.dismiss();
+                    AppManager.getInstance().finishCurrentActivity();
                 }
             });
             mDialog = builder.create();

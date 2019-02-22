@@ -79,11 +79,10 @@ public class AppManager {
      * 结束所有activity
      */
     public void finishAllActivity(){
-        while (mActivies.lastElement() != null) {
+        while (!mActivies.empty()) {
             Activity activity = mActivies.lastElement();
             mActivies.remove(activity);
             activity.finish();
-            activity = null;
         }
     }
 

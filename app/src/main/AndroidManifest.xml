@@ -40,7 +40,8 @@
 
         <activity android:name=".MainActivity"></activity>
         <activity
-            android:name=".ui.WelcomeActivity"
+            android:name=".ui.activity.WelcomeActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
