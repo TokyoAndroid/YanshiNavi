@@ -152,14 +152,16 @@ public class MainActivity extends BaseActivity {
      * 开启定位Service
      */
     private void startLocationService(){
-//        showLoading();
+        showLoading();
         startService(LocationService.getLancher(this));
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
     public void onLocationEvent(LocationEvent event){
         mLat = event.getLat();
-        mLat = event.getLon();
+        mLon = event.getLon();
+        Log.e("zhangwei","" + mLat + " , lon : " + mLon);
+        hideLoading();
     }
 
     @OnClick(R.id.tv_voice)
