@@ -6,12 +6,18 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-
 import com.zw.yanshinavi.R;
 import com.zw.yanshinavi.common.AppManager;
 
 import butterknife.ButterKnife;
 
+/**
+ * 公共Activity的基类
+ *
+ * @author zhangwei
+ * @since 2019-2-22
+ *
+ */
 public abstract class BaseActivity extends AppCompatActivity {
 
     private AlertDialog mLoadingDialog;
@@ -19,17 +25,18 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppManager.getInstance().addToActivityStack(this);
         setContentView(getLayoutRes());
-        ButterKnife.bind(this);
-        afterCreate();
-
+        if(savedInstanceState == null) {
+            AppManager.getInstance().addToActivityStack(this);
+            ButterKnife.bind(this);
+            afterCreate(savedInstanceState);
+        }
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         release();
+        super.onDestroy();
         AppManager.getInstance().finishActivity(this);
     }
 
@@ -45,8 +52,9 @@ public abstract class BaseActivity extends AppCompatActivity {
             mLoadingDialog.setCanceledOnTouchOutside(false);
             mLoadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable());
         }
-        mLoadingDialog.show();
-
+        if(!mLoadingDialog.isShowing()) {
+            mLoadingDialog.show();
+        }
     }
 
     /**
@@ -58,9 +66,33 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 设置对话框是否可以手动取消
+     *
+     * @param cancelable
+     */
+    protected void setLoadingCancelable(boolean cancelable) {
+        if(mLoadingDialog != null) {
+            mLoadingDialog.setCancelable(cancelable);
+        }
+    }
+
+    /**
+     * 判断对话框是否在加载
+     *
+     * @return
+     */
+    protected boolean isLoadingShowing() {
+        if(mLoadingDialog != null) {
+            return mLoadingDialog.isShowing();
+        }
+        return false;
+    }
+
     protected void release(){};
 
     protected abstract @LayoutRes int getLayoutRes();
 
-    protected abstract void afterCreate();
+    protected abstract void afterCreate(@Nullable Bundle savedInstanceState);
+
 }

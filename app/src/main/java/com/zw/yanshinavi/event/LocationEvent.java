@@ -10,10 +10,12 @@ public class LocationEvent {
 
     private double lat;
     private double lon;
+    private String streetName;
 
-    public LocationEvent(double lat, double lon){
+    public LocationEvent(double lat, double lon, String streetName){
         this.lat = lat;
         this.lon = lon;
+        this.streetName = streetName;
     }
 
     public double getLat() {
@@ -30,5 +32,13 @@ public class LocationEvent {
 
     public void setLon(double lon) {
         this.lon = lon;
+    }
+
+    public String getStreetName() {
+        return streetName;
+    }
+
+    public void setStreetName(String streetName) {
+        this.streetName = streetName;
     }
 }

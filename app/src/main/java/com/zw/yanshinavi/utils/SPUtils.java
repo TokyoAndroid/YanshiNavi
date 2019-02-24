@@ -19,7 +19,7 @@ public class SPUtils {
         editor.commit();
     }
 
-    public static boolean getBolean(String name) {
+    public static boolean getBoolean(String name) {
         return getSp().getBoolean(name,false);
     }
 }

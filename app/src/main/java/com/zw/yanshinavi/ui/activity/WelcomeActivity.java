@@ -3,8 +3,10 @@ package com.zw.yanshinavi.ui.activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 
@@ -50,7 +52,7 @@ public class WelcomeActivity extends BaseActivity {
     }
 
     @Override
-    public void afterCreate() {
+    public void afterCreate(@Nullable Bundle savedInstanceState) {
         startTime = System.currentTimeMillis();
 
         //检查网络是否可用
