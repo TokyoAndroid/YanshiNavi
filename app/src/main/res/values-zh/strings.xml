@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Runbo智能导航</string>
-    <string name="navi_voice">Speaking</string>
+    <string name="navi_voice">播报语音</string>
     <string name="start_navi">直接导航</string>
     <string name="road_status">实时路况</string>
     <string name="not_setting">未设置</string>

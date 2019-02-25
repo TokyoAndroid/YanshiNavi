@@ -18,9 +18,10 @@ public class Constant {
     };
 
     public static final String SP_HAS_VOICE = "sp_has_voice";
-    public static final String SP_HAS_ROAD_STATUS = "sp_has_voice";
+    public static final String SP_HAS_ROAD_STATUS = "sp_has_road_status";
     public static final String SP_IS_NO_CAR = "sp_is_no_car";
     public static final String SP_IS_NO_CHARGE = "sp_is_no_charge";
     public static final String SP_IS_NO_HIGHWAY = "sp_is_no_highway";
     public static final String SP_IS_HIGHWAY = "sp_is_highway";
+    public static final String SP_CAR_NUMBER = "sp_car_number";
 }

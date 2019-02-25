@@ -17,8 +17,6 @@ public class AppManager {
     // 管理activity的栈
     private static Stack<Activity> mActivies;
 
-    private static AppManager mInstance;
-
     private AppManager() {
         mActivies = new Stack<>();
     }
@@ -85,7 +83,6 @@ public class AppManager {
             activity.finish();
         }
     }
-
 
     /**
      * 实现单例的内部类

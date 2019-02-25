@@ -2,9 +2,7 @@ package com.zw.yanshinavi;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -13,18 +11,19 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.AppCompatButton;
 import android.support.v7.widget.CardView;
+import android.text.TextUtils;
 import android.util.Log;
-
 import android.view.View;
 
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.Poi;
+import com.amap.api.navi.AMapNavi;
 import com.amap.api.navi.AmapNaviPage;
 import com.amap.api.navi.AmapNaviParams;
 import com.amap.api.navi.AmapNaviType;
 import com.amap.api.navi.AmapPageType;
-import com.amap.api.navi.enums.PathPlanningStrategy;
-
+import com.amap.api.navi.model.AMapCarInfo;
+import com.zw.yanshinavi.common.App;
 import com.zw.yanshinavi.common.AppManager;
 import com.zw.yanshinavi.event.LocationEvent;
 import com.zw.yanshinavi.services.LocationService;
@@ -48,11 +47,18 @@ import butterknife.OnClick;
 
 
 /**
+ * 程序主页面
+ *
+ * @author zhangwei
+ * @since 2019-2-22
+ *
  * 调试 sha1  CF:8D:F6:19:CA:A0:94:EC:96:19:E3:C5:95:3E:7E:5C:9E:CA:6E:F6
  * <p>
  * taishi : 17:02:19:67:57:D4:F4:AF:3E:AE:22:1F:95:65:9A:27:FD:F7:8D:D0
  */
 public class MainActivity extends BaseActivity {
+
+    private static final String TAG = "MainActivity";
 
     @BindView(R.id.cv_road_rout)
     CardView cvRoadRout;
@@ -72,8 +78,7 @@ public class MainActivity extends BaseActivity {
     private String streetName; // 获取的当前位置街道名称
 
     public static Intent getLauncher(Context context) {
-        Intent intent = new Intent(context, MainActivity.class);
-        return intent;
+        return new Intent(context, MainActivity.class);
     }
 
     @Override
@@ -91,7 +96,7 @@ public class MainActivity extends BaseActivity {
 
     private void initView() {
         // 设置标题
-        titleView.setTitle("Runbo智能导航");
+        titleView.setTitle(getString(R.string.main_title));
         titleView.setLeftImageVisiable(false);
         titleView.setRightImageVisiable(false);
     }
@@ -108,6 +113,7 @@ public class MainActivity extends BaseActivity {
             }
         }
         if (!refusePermissions.isEmpty()) {
+            Log.e("zhangwei",TAG + "request Permission");
             ActivityCompat.
                     requestPermissions(this, new String[]{refusePermissions.get(0)}, PERMISSION_REQUEST_CODE);
         } else {
@@ -130,28 +136,18 @@ public class MainActivity extends BaseActivity {
                     startLocationService();
                 }
             } else {
+                Log.e("zhangwei",TAG + " permissions is refuse");
                 AppManager.getInstance().finishAllActivity();
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        Log.e("zhangwei", "onConfigurationChanged");
-        if(newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
-            Log.e("zhangwei", "port");
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        } else if(newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            Log.e("zhangwei", "land");
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-        super.onConfigurationChanged(newConfig);
-    }
 
     @Override
     protected void release() {
         super.release();
+        AMapNavi.getInstance(App.getAppContext()).destroy();
         EventBus.getDefault().unregister(this);
         AppManager.getInstance().finishAllActivity();
     }
@@ -173,14 +169,14 @@ public class MainActivity extends BaseActivity {
     /**
      * 定位成功后的回调
      *
-     * @param event
+     * @param event 定位信息
      */
     @Subscribe(threadMode = ThreadMode.MAIN_ORDERED)
     public void onLocationEvent(LocationEvent event) {
         mLat = event.getLat();
         mLon = event.getLon();
         streetName = event.getStreetName();
-        Log.e("zhangwei", "" + mLat + " , lon : " + mLon);
+        Log.e("dingwei", TAG + "lat: " + mLat + " , lon: " + mLon);
         hideLoading();
     }
 
@@ -190,20 +186,11 @@ public class MainActivity extends BaseActivity {
             case R.id.cv_road_rout:
                 // 112.24608,30.333196 模拟点位
                 if (mLat == 0 || mLon == 0) {
-                    CommonUtils.showToast("未获取到当前坐标，请确认定位是否已开启！", false);
+                    CommonUtils.showToast(getString(R.string.no_latlon_please_open_location)
+                            , false);
                 } else {
-                    Poi start = new Poi(streetName, new LatLng(mLat, mLon), "");
-                    Poi end = new Poi("点位", new LatLng(30.333196, 112.24608), "");
-
-                    AmapNaviParams params = new AmapNaviParams(start, null, end, AmapNaviType.DRIVER);
-                    boolean isShowRoadStatus = SPUtils.getBoolean(Constant.SP_HAS_ROAD_STATUS);
-                    boolean isSpeaking = SPUtils.getBoolean(Constant.SP_HAS_VOICE);
-                    int strategy = getStrategy();
-                    params.setTrafficEnabled(isShowRoadStatus);
-                    params.setUseInnerVoice(isSpeaking);
-                    params.setRouteStrategy(strategy);
-                    AmapNaviPage.getInstance()
-                            .showRouteActivity(MainActivity.this, params, null);
+                    Log.e("zhangwei", TAG + " start Route, my poi: " + mLat + "," + mLon);
+                    startActivity(RouteActivity.getLauncher(mLat,mLon,30.333196,112.24608));
                 }
                 break;
             case R.id.cv_map_setting:
@@ -211,65 +198,29 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.btn_start_navi:
                 // 112.24608,30.333196 模拟点位
-                if (mLat == 0 || mLon == 0) {
-                    CommonUtils.showToast("未获取到当前坐标，请确认定位是否已开启！", false);
-                } else {
-                    startActivity(RouteActivity.getLauncher(mLat,mLon,30.333196,112.24608));
+                LatLng startLatLng = new LatLng(mLat,mLon);
+                LatLng endLatLng = new LatLng(30.333196,112.24608);
+                Poi start = new Poi(getString(R.string.my_location), startLatLng, "");//起点
+                Poi end = new Poi(getString(R.string.destination), endLatLng, "");//终点
+                AmapNaviParams amapNaviParams = new AmapNaviParams(start, null, end, AmapNaviType.DRIVER, AmapPageType.NAVI);
+                boolean isShowRoadStatus = SPUtils.getBoolean(Constant.SP_HAS_ROAD_STATUS);
+                boolean isSpeaking = SPUtils.getBoolean(Constant.SP_HAS_VOICE);
+                amapNaviParams.setUseInnerVoice(isSpeaking);
+                amapNaviParams.setTrafficEnabled(isShowRoadStatus);
+                amapNaviParams.setRouteStrategy(SPUtils.getStrategy());
+                String carNumberStr = SPUtils.getString(Constant.SP_CAR_NUMBER).trim();
+                if(!TextUtils.isEmpty(carNumberStr)) {
+                    AMapCarInfo carInfo = new AMapCarInfo();
+                    carInfo.setCarNumber(carNumberStr);
+                    carInfo.setRestriction(true); // 计算是否限行
+                    amapNaviParams.setCarInfo(carInfo);
                 }
+                Log.e("zhangwei", TAG + " start Navi my poi: " + mLat + "," + mLon);
+                AmapNaviPage.getInstance().showRouteActivity(getApplicationContext(), amapNaviParams, null);
                 break;
         }
     }
 
-    /**
-     * 获取出行偏好
-     */
-    private int getStrategy() {
-        boolean isNoCar = SPUtils.getBoolean(Constant.SP_IS_NO_CAR);
-        boolean isNoHighway = SPUtils.getBoolean(Constant.SP_IS_NO_HIGHWAY);
-        boolean isNoCharge = SPUtils.getBoolean(Constant.SP_IS_NO_CHARGE);
-        boolean isHighway = SPUtils.getBoolean(Constant.SP_IS_HIGHWAY);
-
-        int strategy = 10; // 高德地图默认不选策略为10
-
-        if(isNoCar && !isNoHighway && !isNoCharge && !isHighway) {
-            // 躲避拥堵
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_CONGESTION;
-        } else if(isNoCar && isNoHighway && !isNoCharge && !isHighway) {
-            // 躲避拥堵&不走高速
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_HIGHSPEED_CONGESTION;
-        } else if(isNoCar && !isNoHighway && isNoCharge && !isHighway) {
-            // 躲避拥堵&躲避收费
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_COST_CONGESTION;
-        }  else if(isNoCar && !isNoHighway && isNoCharge && !isHighway) {
-            // 躲避拥堵&高速优先
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_PRIORITY_HIGHSPEED_AVOID_CONGESTION;
-        } else if(isNoCar && isNoHighway && isNoCharge && !isHighway){
-            // 躲避拥堵&不走高速&躲避收费
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_HIGHSPEED_COST_CONGESTION;
-        } else if(!isNoCar && isNoHighway && !isNoCharge && !isHighway){
-            // 不走高速
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_HIGHSPEED;
-        } else if(!isNoCar && isNoHighway && isNoCharge && !isHighway){
-            // 不走高速&躲避收费
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_HIGHTSPEED_COST;
-        } else if(!isNoCar && !isNoHighway && isNoCharge && !isHighway){
-            // 躲避收费
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_AVOID_COST;
-        } else if(!isNoCar && !isNoHighway && !isNoCharge && isHighway){
-            // 高速优先
-            strategy = PathPlanningStrategy
-                    .DRIVING_MULTIPLE_ROUTES_PRIORITY_HIGHSPEED;
-        }
-        return strategy;
-    }
 
     @Override
     public void onBackPressed() {

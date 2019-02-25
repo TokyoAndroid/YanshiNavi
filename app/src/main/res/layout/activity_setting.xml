@@ -75,6 +75,11 @@
                 android:layout_height="wrap_content"
                 app:layout_constraintTop_toBottomOf="@id/sw_hightway"></com.zw.yanshinavi.ui.views.JumpView>
 
+            <com.zw.yanshinavi.ui.views.EditView
+                android:id="@+id/et_car_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/jv_offline_map"/>
 
         </android.support.constraint.ConstraintLayout>
 

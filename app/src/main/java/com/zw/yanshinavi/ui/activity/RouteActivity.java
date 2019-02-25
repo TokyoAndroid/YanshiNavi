@@ -13,16 +13,20 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.amap.api.maps.AMap;
-import com.amap.api.maps.AMapUtils;
 import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapView;
 import com.amap.api.maps.model.BitmapDescriptorFactory;
 import com.amap.api.maps.model.LatLng;
-import com.amap.api.maps.model.Marker;
 import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.maps.model.Poi;
 import com.amap.api.navi.AMapNavi;
 import com.amap.api.navi.AMapNaviListener;
+import com.amap.api.navi.AmapNaviPage;
+import com.amap.api.navi.AmapNaviParams;
+import com.amap.api.navi.AmapNaviType;
+import com.amap.api.navi.AmapPageType;
 import com.amap.api.navi.model.AMapCalcRouteResult;
+import com.amap.api.navi.model.AMapCarInfo;
 import com.amap.api.navi.model.AMapLaneInfo;
 import com.amap.api.navi.model.AMapModelCross;
 import com.amap.api.navi.model.AMapNaviCameraInfo;
@@ -38,7 +42,6 @@ import com.amap.api.navi.model.AimLessModeCongestionInfo;
 import com.amap.api.navi.model.AimLessModeStat;
 import com.amap.api.navi.model.NaviInfo;
 import com.amap.api.navi.model.NaviLatLng;
-import com.amap.api.navi.model.NaviPath;
 import com.amap.api.navi.view.RouteOverLay;
 import com.autonavi.tbt.TrafficFacilityInfo;
 import com.zw.yanshinavi.R;
@@ -57,7 +60,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import butterknife.BindView;
-import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 /**
@@ -80,28 +82,22 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
     TextView tvStartNavi;
 
     private AMap aMap;
-    private Marker mStartMarker;
-    private Marker mEndMarker;
     private AMapNavi aMapNavi;
     private List<NaviLatLng> mStartList;
     private List<NaviLatLng> mEndList;
-    private boolean calculateSuccess; // 算路是否成功
-    private int routeCount = 0; // 可选路线总数
 
     /**
      * 保存当前算好的路线
      */
-    private SparseArray<RouteOverLay> routeOverlays = new SparseArray<RouteOverLay>();
+    private SparseArray<RouteOverLay> routeOverlays = new SparseArray<>();
     /**
      * 路线的权值，重合路线情况下，权值高的路线会覆盖权值低的路线
      **/
     private int zindex = 1;
 
     private AlertDialog mSelectDialog;
-    private RouteItemView routeItemView1;
-    private RouteItemView routeItemView2;
-    private RouteItemView routeItemView3;
-    private List<RouteItemView> routeItemViews = new ArrayList<>();
+    private List<RouteItemView> routeItemViews = new ArrayList<>(); //存放选择的路径View
+    private int strategyFlag; // 出行偏好策略值
 
     public static Intent getLauncher(double startLat, double startLon,
                                      double endLat, double endLon) {
@@ -124,6 +120,7 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
 
         initView(savedInstanceState);
 
+        showLoading();
         startCalculate();
     }
 
@@ -156,8 +153,8 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
         // 地图初始化
         mapView.onCreate(savedInstanceState);
         aMap = mapView.getMap();
-        mStartMarker = aMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(getResources(), R.mipmap.start))));
-        mEndMarker = aMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(getResources(), R.mipmap.end))));
+        aMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(getResources(), R.mipmap.start))));
+        aMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(getResources(), R.mipmap.end))));
 
         setMapCenter();
 
@@ -169,9 +166,9 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
         if(mSelectDialog == null) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             View contentView = LayoutInflater.from(this).inflate(R.layout.layout_route_info,null);
-            routeItemView1 = contentView.findViewById(R.id.item_view1);
-            routeItemView2 = contentView.findViewById(R.id.item_view2);
-            routeItemView3 = contentView.findViewById(R.id.item_view3);
+            RouteItemView routeItemView1 = contentView.findViewById(R.id.item_view1);
+            RouteItemView routeItemView2 = contentView.findViewById(R.id.item_view2);
+            RouteItemView routeItemView3 = contentView.findViewById(R.id.item_view3);
             routeItemViews.add(routeItemView1);
             routeItemViews.add(routeItemView2);
             routeItemViews.add(routeItemView3);
@@ -184,7 +181,6 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
                 String cost = getCostTime(path.getAllTime());
                 String km = getKm(path.getAllLength());
                 RouteItemView view = routeItemViews.get(i);
-                Log.e("zhangwei", " i : " + i + " lab " + label + " , " + cost + " , " + km);
                 view.setLabel(label);
                 view.setTime(cost);
                 view.setKm(km);
@@ -196,7 +192,6 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
 
             builder.setView(contentView);
             mSelectDialog = builder.create();
-            mSelectDialog.setCanceledOnTouchOutside(false);
         }
         if(!mSelectDialog.isShowing()) {
             mSelectDialog.show();
@@ -204,6 +199,7 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
     }
 
     private void changeRoute(int index){
+        Log.e("zhangwei",TAG + "select road : " + index);
         if(mSelectDialog != null && mSelectDialog.isShowing()) {
             mSelectDialog.dismiss();
         }
@@ -219,12 +215,12 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
         if(routeOverlay != null){
             routeOverlay.setTransparency(1);
             routeOverlay.zoomToSpan(DisplayUtils.dip2px(this, 100));
-            /**把用户选择的那条路的权值弄高，使路线高亮显示的同时，重合路段不会变的透明**/
+            // 把用户选择的那条路的权值弄高，使路线高亮显示的同时，重合路段不会变的透明
             routeOverlay.setZindex(zindex++);
         }
         //必须告诉AMapNavi 你最后选择的哪条路
         aMapNavi.selectRouteId(routeID);
-        /**选完路径后判断路线是否是限行路线**/
+        // 选完路径后判断路线是否是限行路线
         AMapRestrictionInfo info = aMapNavi.getNaviPath().getRestrictionInfo();
         if (!TextUtils.isEmpty(info.getRestrictionTitle())) {
             CommonUtils.showToast(info.getRestrictionTitle(),true);
@@ -255,7 +251,7 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
     /**
      * 获取总里程
      *
-     * @param length
+     * @param length 单位米
      */
     private String getKm(int length){
         int km = length / 1000;
@@ -277,11 +273,15 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
             return;
         }
 
-        boolean isNoCar = SPUtils.getBoolean(Constant.SP_IS_NO_CAR);
-        boolean isNoHighway = SPUtils.getBoolean(Constant.SP_IS_NO_HIGHWAY);
-        boolean isNoCharge = SPUtils.getBoolean(Constant.SP_IS_NO_CHARGE);
-        boolean isHighway = SPUtils.getBoolean(Constant.SP_IS_HIGHWAY);
-        int strategyFlag = aMapNavi.strategyConvert(isNoCar, isNoHighway, isNoCharge, isHighway, true);
+        strategyFlag = SPUtils.getStrategy();
+
+        String carNumberStr = SPUtils.getString(Constant.SP_CAR_NUMBER).trim();
+        if(!TextUtils.isEmpty(carNumberStr)) {
+            AMapCarInfo carInfo = new AMapCarInfo();
+            carInfo.setCarNumber(carNumberStr);
+            carInfo.setRestriction(true); // 计算是否限行
+            aMapNavi.setCarInfo(carInfo);
+        }
         aMapNavi.calculateDriveRoute(mStartList, mEndList, null, strategyFlag);
     }
 
@@ -308,14 +308,7 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
         super.onDestroy();
         mapView.onDestroy();
         aMapNavi.removeAMapNaviListener(this);
-        aMapNavi.destroy();
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // TODO: add setContentView(...) invocation
-        ButterKnife.bind(this);
+//        aMapNavi.destroy();
     }
 
     @Override
@@ -330,6 +323,9 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
             case R.id.item_view3:
                 changeRoute(2);
                 break;
+            case R.id.iv_back:
+                finish();
+                break;
 
         }
     }
@@ -341,6 +337,25 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
                 selectRoute();
                 break;
             case R.id.tv_start_navi:
+                LatLng startLatLng = new LatLng(
+                        mStartList.get(0).getLatitude(),
+                        mStartList.get(0).getLongitude());
+                LatLng endLatLng = new LatLng(
+                        mEndList.get(0).getLatitude(),
+                        mEndList.get(0).getLongitude());
+
+                Poi start = new Poi("我的位置", startLatLng, "");//起点
+                Poi end = new Poi("点位", endLatLng, "");//终点
+                AmapNaviParams amapNaviParams = new AmapNaviParams(start, null, end, AmapNaviType.DRIVER, AmapPageType.NAVI);
+                boolean isShowRoadStatus = SPUtils.getBoolean(Constant.SP_HAS_ROAD_STATUS);
+                boolean isSpeaking = SPUtils.getBoolean(Constant.SP_HAS_VOICE);
+                Log.e("zhangwei","isSpeaking : " + isSpeaking);
+                aMapNavi.setUseInnerVoice(isSpeaking);
+                amapNaviParams.setTrafficEnabled(isShowRoadStatus);
+                amapNaviParams.setRouteStrategy(strategyFlag);
+                Log.e("zhangwei", TAG + " start Navi");
+                AmapNaviPage.getInstance().showRouteActivity(getApplicationContext(), amapNaviParams, null);
+                this.finish();
                 break;
         }
     }
@@ -349,11 +364,10 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
     /**
      * 规划路径成功后绘制路径
      *
-     * @param routeId
-     * @param path
+     * @param routeId 出行路线对应的Id
+     * @param path id对应的path
      */
     private void drawRoutes(int routeId, AMapNaviPath path) {
-        calculateSuccess = true;
         aMap.moveCamera(CameraUpdateFactory.changeTilt(0));
         RouteOverLay routeOverLay = new RouteOverLay(aMap, path, this);
         routeOverLay.setTrafficLine(false);
@@ -361,6 +375,9 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
         routeOverlays.put(routeId, routeOverLay);
     }
 
+    /**
+     * 设置进入页面后的地图中心点
+     */
     private void setMapCenter() {
         double startLat = mStartList.get(0).getLatitude();
         double startLon = mStartList.get(0).getLongitude();
@@ -368,11 +385,11 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
         double endLon = mEndList.get(0).getLongitude();
         double centerLat = (startLat + endLat) / 2;
         double centerLon = (startLon + endLon) / 2;
-
-        LatLng start = new LatLng(startLat, startLon);
-        LatLng end = new LatLng(endLat, endLon);
         LatLng center = new LatLng(centerLat, centerLon);
-        float distance = AMapUtils.calculateLineDistance(start, end);
+
+//        LatLng start = new LatLng(startLat, startLon);
+//        LatLng end = new LatLng(endLat, endLon);
+//        float distance = AMapUtils.calculateLineDistance(start, end);
 //
 //        int zoom = 0;
 //        if (distance < 20 * 1000) {
@@ -395,22 +412,23 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
      */
     @Override
     public void onCalculateRouteFailure(int i) {
-        calculateSuccess = false;
+        Log.e("zhangwei",TAG + " onCalculateRouteFailure errorCode : " + i);
         CommonUtils.showCalculateRouteFail(i);
+        hideLoading();
         finish();
     }
 
     /**
      * 算路成功回调
      *
-     * @param ints
+     * @param ints 路径Ids
      */
     @Override
     public void onCalculateRouteSuccess(int[] ints) {
         Log.e("zhangwei",TAG + " onCalculateRouteSuccess");
+        hideLoading();
         routeOverlays.clear();
         HashMap<Integer, AMapNaviPath> paths = aMapNavi.getNaviPaths();
-        routeCount = paths.size();
         for (int i = 0; i < ints.length; i++) {
             AMapNaviPath path = paths.get(ints[i]);
             if (path != null) {
@@ -423,12 +441,12 @@ public class RouteActivity extends BaseActivity implements View.OnClickListener,
 
     @Override
     public void onInitNaviFailure() {
-
+        Log.e("zhangwei",TAG + " onInitNaviFailure");
     }
 
     @Override
     public void onInitNaviSuccess() {
-
+        Log.e("zhangwei",TAG + " onInitNaviSuccess");
     }
 
     @Override

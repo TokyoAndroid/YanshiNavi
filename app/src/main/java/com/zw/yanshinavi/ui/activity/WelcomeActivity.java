@@ -2,13 +2,11 @@ package com.zw.yanshinavi.ui.activity;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 
 import com.zw.yanshinavi.MainActivity;
 import com.zw.yanshinavi.R;
@@ -17,23 +15,27 @@ import com.zw.yanshinavi.common.AppManager;
 import com.zw.yanshinavi.ui.base.BaseActivity;
 import com.zw.yanshinavi.utils.Constant;
 import com.zw.yanshinavi.utils.NetworkUtil;
+import com.zw.yanshinavi.utils.SPUtils;
 
-import java.text.BreakIterator;
-
+/**
+ * 程序入口界面
+ *
+ * @author zhangwei
+ * @since 2019-2-22
+ */
 public class WelcomeActivity extends BaseActivity {
 
     private AlertDialog mDialog;
 
-    private static final int LOCATION_REQUEST = 0x999;
-    private static final int NETWORK_REQUEST = 0x998;
+    private static final int LOCATION_REQUEST = 0x999; // 请求系统打开位置服务的请求码
+    private static final int NETWORK_REQUEST = 0x998; // 请求系统打开网络的请求码
 
-    private static final int ACTION_NETWORK = 1;
-    private static final int ACTION_LOCATION = 2;
-    private static final int ACTION_FINISH = 3;
+    private static final int ACTION_NETWORK = 1; // 当前请求类型是网络
+    private static final int ACTION_LOCATION = 2; // 当前请求类型是位置
+    private static final int ACTION_FINISH = 3; // 当前请求类型是结束
 
     private int clickAction;
 
-    private long startTime;
 
     /**
      * 检查是否有使用本App权限
@@ -41,9 +43,7 @@ public class WelcomeActivity extends BaseActivity {
      * @return 是否有权限
      */
     private boolean checkHasUsePermission() {
-        SharedPreferences sp = getSharedPreferences(Constant.SP_NAME, MODE_PRIVATE);
-        boolean hasPer = sp.getBoolean(Constant.HAS_USE_PERMISSION, false);
-        return hasPer;
+        return SPUtils.getBoolean(Constant.HAS_USE_PERMISSION);
     }
 
     @Override
@@ -53,13 +53,12 @@ public class WelcomeActivity extends BaseActivity {
 
     @Override
     public void afterCreate(@Nullable Bundle savedInstanceState) {
-        startTime = System.currentTimeMillis();
-
         //检查网络是否可用
         boolean hasNetwork = NetworkUtil.isNetworkConnected(App.getAppContext());
         if(!hasNetwork) {
             clickAction = ACTION_NETWORK;
-            showPosDialog("设置网络","请先去打开网络开关！");
+            showPosDialog(getString(R.string.setting_network)
+                    ,getString(R.string.please_open_network));
             return;
         }
 
@@ -74,7 +73,8 @@ public class WelcomeActivity extends BaseActivity {
         boolean isLocationEnable = NetworkUtil.isLocationEnabled();
         if(!isLocationEnable) {
             clickAction = ACTION_LOCATION;
-            showPosDialog("开启位置服务","请先去开启位置服务！");
+            showPosDialog(getString(R.string.open_location_service)
+                    ,getString(R.string.please_open_location_service));
         } else {
             jump();
         }
@@ -107,7 +107,7 @@ public class WelcomeActivity extends BaseActivity {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(title);
             builder.setMessage(message);
-            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     mDialog.dismiss();
@@ -144,7 +144,8 @@ public class WelcomeActivity extends BaseActivity {
             boolean isLocationEnable = NetworkUtil.isLocationEnabled();
             if(!isLocationEnable) {
                 clickAction = ACTION_FINISH;
-                showPosDialog("位置服务未打开","无法获取当前位置，请先打开位置服务！");
+                showPosDialog(getString(R.string.location_service_not_open)
+                        ,getString(R.string.no_location_please_open));
             } else {
                 jump();
             }
@@ -152,7 +153,8 @@ public class WelcomeActivity extends BaseActivity {
             boolean hasNetwork = NetworkUtil.isNetworkConnected(App.getAppContext());
             if(!hasNetwork) {
                 clickAction = ACTION_FINISH;
-                showPosDialog("没有网络","请检查网络是否可用！");
+                showPosDialog(getString(R.string.no_internet)
+                        ,getString(R.string.please_check_network));
             } else {
                 isLocationEnable();
             }
