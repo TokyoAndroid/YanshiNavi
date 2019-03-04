@@ -93,7 +93,7 @@ public class WelcomeActivity extends BaseActivity {
                     startActivity(MainActivity.getLauncher(WelcomeActivity.this));
                 } else {
                     // TODO 跳转到注册码界面
-                    startActivity(MainActivity.getLauncher(WelcomeActivity.this));
+                    startActivity(RegisterActivity.getLauncher());
                 }
                 finish();
             }

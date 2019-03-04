@@ -89,7 +89,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         return false;
     }
 
-    protected void release(){};
+    protected void release(){}
 
     protected abstract @LayoutRes int getLayoutRes();
 

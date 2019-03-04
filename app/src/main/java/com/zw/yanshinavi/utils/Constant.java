@@ -24,4 +24,5 @@ public class Constant {
     public static final String SP_IS_NO_HIGHWAY = "sp_is_no_highway";
     public static final String SP_IS_HIGHWAY = "sp_is_highway";
     public static final String SP_CAR_NUMBER = "sp_car_number";
+    public static final String SP_DEVICE_ID = "sp_device_id";
 }

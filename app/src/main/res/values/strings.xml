@@ -29,4 +29,7 @@
     <string name="cannot_highway_and_not_highway">高速优先与不走高速不能同时选择</string>
     <string name="set_car_number">设置车牌</string>
     <string name="car_number_too_long">车牌号过长！</string>
+    <string name="register">注册</string>
+    <string name="machine_code">机器码:</string>
+    <string name="wrong_register_code">输入的注册码有误，请重新输入！</string>
 </resources>
